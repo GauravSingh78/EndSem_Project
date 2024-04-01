@@ -39,18 +39,18 @@ def import_set(file_path):
         my_set = pickle.load(file)
     return my_set
 
-import_file_path = r'C:\Users\ASUS\OneDrive\Desktop\New folder\exported_set.pkl'
+import_file_path = r'exported_set.pkl'
 
 
 def evaluate_all_conditions(**kwargs):
     results = []
 
-    function_file_path = r"C:\Users\ASUS\OneDrive\Desktop\New folder\fun.py"
+    function_file_path = r"TreeFunction.py"
 
     with open(function_file_path, 'r') as file:
         functions_code = file.read()
 
-    for i in range(1,101):
+    for i in range(1,21):
         function_name = f"decision_tree_rule_{i}"
         exec(functions_code)
         function = locals()[function_name]

@@ -5,7 +5,7 @@ from matplotlib.animation import FuncAnimation
 import pickle
 import numpy as np
 
-data = pd.read_csv(r"C:\Users\ASUS\OneDrive\Desktop\fastnfastp\test\fastnfastp_3.6V_45.csv")
+data = pd.read_csv(r"C:\Users\Admin\Desktop\forthSem\test\fastnfastp_3.6V_45.csv")
 
 x_data_input = []
 pdd = []

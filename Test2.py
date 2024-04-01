@@ -4,10 +4,10 @@ from itertools import count
 from matplotlib.animation import FuncAnimation
 import pickle
 import numpy as np
+import concurrent.futures
 
-
-with open('Random_Forest_20.pkl','rb') as f:
-    m= pickle.load(f)
+with open('Random_Forest_20.pkl', 'rb') as f:
+    m = pickle.load(f)
 
 label_encoder = m['label_encoder']
 
@@ -53,13 +53,13 @@ def calculate_metrics(y_data, vinn):
     snr = 10 * np.log10(signal_power / noise_power)
     return rmse, mae, snr
 
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14,10))
-ax1.set_title('Title 1', pad=20)  
-ax2.set_title('Title 2', pad=20)
-ax1.set_xlabel('X-axis label', labelpad=10) 
-ax1.set_ylabel('Y-axis label', labelpad=10) 
-ax2.set_xlabel('X-axis label', labelpad=10) 
-ax2.set_ylabel('Y-axis label', labelpad=10)
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 10))
+ax1.set_title('Input', pad=20)
+ax2.set_title('Output', pad=20)
+ax1.set_xlabel('TIme', labelpad=10)
+ax1.set_ylabel('Voltage', labelpad=10)
+ax2.set_xlabel('Time', labelpad=10)
+ax2.set_ylabel('Voltage', labelpad=10)
 
 x_data_output = []
 y_data = []
@@ -80,7 +80,7 @@ def animate_input(i):
         vdd.append(vd)
         temperature.append(temp)
         process.append(pro)
-        
+
         ax1.clear()
         ax1.plot(x_data_input, pdd, label='pdd')
         ax1.plot(x_data_input, vinp, label='vinp')
@@ -96,21 +96,21 @@ def animate_output(i):
     if next(index) < len(data):
         x = data['time'].iloc[next(index)]
         y = data['vinn'].iloc[next(index)]
-        
-        # Perform prediction for the current data point
+
         input_values = data[['vdd', 'pd', 'vinp', 'temperature', 'process']].iloc[next(index)].to_dict()
-        
-        # Transform process column using label encoder
+
         input_values['process'] = label_encoder.transform([input_values['process']])[0]
-        
-        pred = evaluate_all_conditions(**input_values)
-        
-        prediction.extend(pred)  # Extend instead of append
-        x_data_output.extend([x] * len(pred))  # Extend x_data_output to match prediction length
-        y_data.extend([y] * len(pred))  # Extend y_data to match prediction length
-        
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future = executor.submit(evaluate_all_conditions, **input_values)
+            pred = future.result()
+
+        prediction.append(np.average(pred))  
+        x_data_output.append(x) 
+        y_data.append(y)  
+
         rmse, mae, snr = calculate_metrics(np.array(y_data), np.array(prediction))
-        
+
         ax2.clear()
         ax2.plot(x_data_output, y_data, label='Actual', color='b')
         ax2.plot(x_data_output, np.array(prediction).flatten(), label='Predicted', color='red')
@@ -119,9 +119,8 @@ def animate_output(i):
         ax2.set_title('Real-time Waveform Plot (Output) \n(RMSE: {:.4f}, MAE: {:.4f}, SNR: {:.4f})'.format(rmse, mae, snr))
         ax2.legend()
 
-
-ani_input = FuncAnimation(fig, animate_input, interval=50, cache_frame_data=False)
-ani_output = FuncAnimation(fig, animate_output, interval=50, cache_frame_data=False)
+ani_input = FuncAnimation(fig, animate_input, interval=1000, cache_frame_data=False)
+ani_output = FuncAnimation(fig, animate_output, interval=1000, cache_frame_data=False)
 
 plt.tight_layout()
 plt.show()
